@@ -13,6 +13,14 @@ import com.stripe.android.model.Card;
 import com.stripe.android.model.Token;
 import com.stripe.android.view.CardInputWidget;
 
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+
 public class MainActivity extends AppCompatActivity {
 
     private CardInputWidget cardInput;
@@ -21,7 +29,8 @@ public class MainActivity extends AppCompatActivity {
             editAddress1,
             editAddress2,
             editCity,
-            editZip;
+            editZip,
+            editEmail;
     private Button payButton;
     private Stripe stripe;
 
@@ -37,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
         editAddress2 = (EditText) findViewById(R.id.editAddress2);
         editCity = (EditText) findViewById(R.id.editCity);
         editZip = (EditText) findViewById(R.id.editZip);
+        editEmail = (EditText) findViewById(R.id.editEmail);
 
         stripe = new Stripe(getApplicationContext(), "pk_test_Nou0qB1WPH8cwe03GGcYhfdu");
 
@@ -58,7 +68,13 @@ public class MainActivity extends AppCompatActivity {
                         card,
                         new TokenCallback() {
                             public void onSuccess(Token token) {
-                                Toast.makeText(getApplicationContext(), "Sent card information to server.", Toast.LENGTH_SHORT).show();
+                                try {
+                                    chargeUser(token.getId(), editEmail.getText().toString());
+                                    Toast.makeText(getApplicationContext(), "Charge successfully submitted to server.", Toast.LENGTH_SHORT).show();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                    Toast.makeText(getApplicationContext(), "An unexpected error occurred.", Toast.LENGTH_SHORT).show();
+                                }
                             }
                             public void onError(Exception error) {
                                 // Show localized error message
@@ -73,6 +89,32 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+    }
+
+
+    private void chargeUser(String token, String email) throws IOException {
+        if (token.isEmpty()) {
+            return;
+        }
+
+        OkHttpClient client = new OkHttpClient();
+
+        Request request = new Request.Builder()
+                .url("http://hotswap.glitch.me/charge?stripeToken=" + token + "&email=" + email)
+                .get()
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Request request, IOException e) {
+                // do nothing, POC
+            }
+
+            @Override
+            public void onResponse(Response response) throws IOException {
+                // do nothing, POC
+            }
+        });
     }
 
 
